@@ -1,4 +1,4 @@
-:root {
+/* :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -65,4 +65,45 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+} */
+@import "tailwindcss";
+
+.hello{
+
+  border-radius: 4px;
+}
+.input-divs{
+  /* display: flex;
+  flex-direction: column;
+  gap: 20px; */
+  border: 2px solid rgb(114, 113, 113);
+  border-radius: 4px;
+  margin: 12px 0px;
+  
+}
+.inputbar{
+  padding: 10px 10px ;  
+    border-radius: 4px;
+    border: none;
+    /* transition: all 0.3s ease-in-out; */
+}
+.registerbox{
+  width: 480px;
+  /* height : 360px; */
+  padding: 40px 40px ;
+  border-radius: 4px;
+  box-shadow:  0 0 10px #3b3a3a  ;
+  transition: all 0.3s ease-in-out;
+  span{
+    padding: 4px;
+    
+  }
+}
+.submit-btn{
+  padding: 10px 10px ;
+    border-radius: 4px;
+    border: none;
+    background-color: #3b3a3a;
+    color: white;
+    cursor: pointer;
 }
