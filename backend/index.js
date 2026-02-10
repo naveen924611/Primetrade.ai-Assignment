@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require("jsonwebtoken");
-const auth_checker = require("./middleware/auth_checker");
+const auth_checker = require("./middleware/auth");
 const app = express();
 
 
@@ -13,7 +13,9 @@ mongose.connect('mongodb://localhost:27017/primetrade').then(()=>{
     console.log('Connected to MongoDB');
 }).catch((err)=>{ console.log(err); });
 
-app.use(cors());
+app.use(cors({
+    origin: '*',
+}));
 app.use(express.json());
 
 
@@ -40,7 +42,7 @@ app.post("/auth/login", async (req, res) => {
     res.json({
         message: "Login successful",
         token,
-        user: { name: user.name, email: user.email }
+        user
     });
 });
 
@@ -62,48 +64,103 @@ app.post("/auth/register", async (req, res) => {
     });
 
     await newUser.save();
-    res.json({ message: "User registered successfully" });
+    res.json({ message: "User registered successfully" , user: newUser});
 });
 
-app.get("/tasks" , auth_checker, async (req, res) => {
-  const {userid } = req.body;
-  if(!userid){
-    return res.status(400).json({ message: "User ID is required" });
+app.get("/tasks", auth_checker, async (req, res) => {
+  try {
+    const user = await userModel.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user.tasks);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
   }
-    try{
-        const user = await userModel.find({ _id: userid });
-        if(!user){
-            return res.status(404).json({ message: "User not found" });
-        }
-        return res.json({ tasks: user.tasks });
-    }catch(err){
-        console.log(err);
-        return res.status(500).json({ message: "Internal server error" });
-    }
 });
-app.get("/tasks/:id" , auth_checker, async (req, res) => {
-//code
-});
-app.post("/tasks" , auth_checker, async (req, res) => {
-  const {userid, task} = req.body;
-  try{
 
-      const user = await userModel.find({ _id: userid });
-      if(!user){
-        return res.status(404).json({ message: "User not found" });
-      }
-        user.tasks.push(task);
-        await user.save();
-        return res.json({ message: "Task added successfully" });
-    }catch(err){
-        console.log(err);
+// app.post("/tasks" , auth_checker, async (req, res) => {
+//   const {userid, task} = req.body;
+//   try{
+// // 
+//       const user =await userModel.findByIdAndUpdate(
+//   userid,
+//   { $push: { tasks: task } },
+//   { new: true }
+// );
+
+//         // const user = await userModel.findById(userid); 
+//       if(!user){
+//         return res.status(404).json({ message: "User not found" });
+//       }
+//         user.tasks.push(task);
+//         await user.save();
+//         return res.json({ message: "Task added successfully" });
+//     }catch(err){
+//         console.log(err);
         
+//     }
+
+// });
+
+
+app.post("/tasks", auth_checker, async (req, res) => {
+  const { title } = req.body;
+
+  if (!title) {
+    return res.status(400).json({ message: "Task title required" });
+  }
+
+  try {
+    const user = await userModel.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
+    user.tasks.push({ title });
+    await user.save();
+
+    res.json(user.tasks);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
-app.put("/tasks/:id" , auth_checker, async (req, res) => {
-//code
+app.delete("/tasks/:id", auth_checker, async (req, res) => {
+  try {
+    const user = await userModel.findById(req.userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.tasks = user.tasks.filter(
+      (task) => task._id.toString() !== req.params.id
+    );
+
+    await user.save();
+    res.json(user.tasks);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
 });
+
+app.put("/tasks/:id", auth_checker, async (req, res) => {
+  try {
+    const user = await userModel.findById(req.userId);
+    const task = user.tasks.id(req.params.id);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    task.completed = !task.completed;
+
+    await user.save();
+    res.json(task);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 
 app.listen(5000, () => {
